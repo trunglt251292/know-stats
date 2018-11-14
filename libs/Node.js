@@ -227,6 +227,11 @@ Node.prototype.sendBlockUpdate = async function (block) {
   console.info("Sending stats to block ...");
   this.emit('block', await this.prepareBlock(block));
 };
+
+Node.prototype.whenConnect = async function () {
+  this.emit('stats', await this.prepareStats());
+  this.emit('block', await this.prepareBlock(this.stats.block));
+};
 Node.prototype.sendStatsUpdate = async function() {
   if(this.status){
     console.info("Sending stats to Knowstats ...");

@@ -15,7 +15,7 @@ const io = new SocketIO(server);
 // const server = http.createServer();
 io.on('connection',(socket)=>{
   console.log('Co nguoi ket noi !!');
-  node.sendBlockUpdate();
+  node.whenConnect();
   socket.on('disconnect',()=>{
     console.log('Co nguoi thoat!'+socket.id);
   })
