@@ -21,4 +21,5 @@ Licensed under the [GPLv3 License](https://github.com/trunglt251292/know-stats/L
 - [Block Explorer](http://testnet.explorer.knownetwork.io)
 
 # Credits
+Copy right 2018
 [LTTv1] (https://github.com/trunglt251292)
