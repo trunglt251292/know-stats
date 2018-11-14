@@ -108,7 +108,7 @@ Node.prototype.emit = function (message, payload) {
 Node.prototype.resetPeers = async function () {
   try{
     console.info('Starting exchange peer ........')
-    if((this.location + 1) < this.stats.peers ){
+    if((this.location + 1) > this.stats.peers ){
       this.location = 0;
     } else {
       let i = this.location + 1;
@@ -159,7 +159,7 @@ Node.prototype.updateBlockHeight = async function() {
       json:true
     };
     let data = await request(options);
-    if(data.data.length > 0){
+    if(data && data.data.length > 0){
       let block = data.data[0];
       this.blockHeight = block.height;
       await this.validateLastBlock(null, block, '');
