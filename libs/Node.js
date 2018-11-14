@@ -172,7 +172,7 @@ Node.prototype.updateBlockHeight = async function() {
 
 Node.prototype.validateLastBlock = async function (error, result, timeString) {
   if(result.height !== this.stats.block.number){
-    console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions);
+    console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions+ ' /.To peers : '+this.ip_node);
     let block = {
       number: 0,
       hash: '',
