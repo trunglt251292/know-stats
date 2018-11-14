@@ -1,0 +1,27 @@
+[
+  {
+    "name"              : "knowstats-reporter",
+    "script"            : "app.js",
+    "log_date_format"   : "YYYY-MM-DD HH:mm Z",
+    "merge_logs"        : false,
+    "watch"             : false,
+    "max_restarts"      : 1000,
+    "exec_interpreter"  : "node",
+    "exec_mode"         : "fork_mode",
+    "env":
+    {
+      "NODE_ENV"        : "production",
+      "RPC_HOST"        : "35.236.43.14",
+      "RPC_PORT"        : "4003",
+      "LISTENING_PORT"  : "4003",
+      "INSTANCE_NAME"   : "reporter",
+      "CONTACT_DETAILS" : "",
+      "NETWORK_MODE"    : "devnet",
+      "WS_SERVER"       : "http://localhost:2086",
+      "WS_SECRET"       : "&7e57aMRXqkWx@ek7tKN&^kxcNaVh7",
+      "VERBOSITY"       : 3,
+      "REPORTERVER"     : "1.5.0",
+      "PROPOSAL"        : ""
+    }
+  }
+]
