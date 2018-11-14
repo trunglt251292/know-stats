@@ -23,11 +23,14 @@ const api = {
 function Node(io) {
   this.io = io;
   this.status = false;
-  this.ip_node = '';
-  this.port = '';
-  this.uri = '';
+  this.location = 0;
+  this.limit_peer = 0;
+  this.ip_node = config.peers[0].host;
+  this.port = config.peers[0].port;
+  this.uri = (config.peers[0].ssl ? 'https://':'http://')+''+config.peers[0].host+':'+config.peers[0].port;
   this.timeSendBlock = 0;
-  this.ssl = false;
+  this.ssl = config.peers[0].ssl;
+  this.peers = [];
   this.blockHeight = 0;
   this.stats = {
     active: false,
@@ -62,27 +65,28 @@ function Node(io) {
 Node.prototype.checknode = async function () {
   try{
     let self = this;
-    let nodes = config.peers;
-    for(let i = 0; i<nodes.length; i++){
-      let options = {
-        uri: (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port+''+api.status,
-        method:'GET',
-        json:true
-      };
-      let success = await request(options);
-      if(success){
-        self.uri = (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port;
-        self.status = true;
-        self.ip_node = nodes[i].host;
-        self.port = nodes[i].port;
-        self.ssl = nodes[i].ssl;
-        this.init();
-        break;
+    let nodes = this.peers;
+    if(nodes.length === 0){
+      await this.updatePeers();
+      await this.checknode();
+    } else {
+      for(let i = 0; i<nodes.length; i++){
+        let options = {
+          uri: (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port+''+api.status,
+          method:'GET',
+          json:true
+        };
+        let success = await request(options);
+        if(success){
+          self.uri = (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port;
+          self.status = true;
+          self.ip_node = nodes[i].host;
+          self.port = nodes[i].port;
+          self.ssl = nodes[i].ssl;
+          this.init();
+          break;
+        }
       }
-    }
-    if(!self.ip_node){
-      console.info('Connected '+nodes.length+' node failed. Please setup again.');
-      process.exit(1);
     }
   }catch (err){
     console.error(err);
@@ -101,6 +105,52 @@ Node.prototype.emit = function (message, payload) {
   }
 };
 
+Node.prototype.resetPeers = async function () {
+  try{
+    console.info('Starting exchange peer ........')
+    if((this.location + 1) < this.stats.peers ){
+      this.location = 0;
+    } else {
+      let i = this.location + 1;
+      this.location ++;
+      let peers = this.peers;
+      this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
+      this.status = true;
+      this.ip_node = peers[i].host;
+      this.port = peers[i].port;
+      this.ssl = peers[i].ssl;
+    }
+  }catch (err){
+    console.log("Reset peer error: ",err);
+  }
+};
+Node.prototype.updatePeers = async function () {
+  try{
+    let options = {
+      uri:this.uri+api.peers,
+      method:'GET',
+      json:true
+    };
+    let data = await request(options);
+    let peers = data.data;
+    if(peers.length > 0){
+      peers.map(e=>{
+        let peer = {
+          host:e.ip,
+          port:4003,
+          ssl:false
+        };
+        this.peers.push(peer);
+      });
+      console.info('Found '+peers.length+' from Know Network.');
+    } else {
+      console.info('Not found peer in Know NetWork....')
+    }
+  }catch (err){
+    console.log("Update peers fail.");
+    console.error(err);
+  }
+};
 Node.prototype.updateBlockHeight = async function() {
   try{
     let options = {
@@ -146,7 +196,9 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
     block.totalDifficulty = result.id;
     let tx = result.transactions;
     if(tx>0){
-      block.transactions.push(Math.random().toString(36).substring(7));
+      for(let i = 0; i<tx; i++){
+        block.transactions.push(Math.random().toString(36).substring(7));
+      }
     }
     block.uncles = result.forged.reward;
 
@@ -154,9 +206,16 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
     block.forger.address = result.generator.address;
     block.forger.publicKey = result.generator.publicKey;
     this.stats.block = block;
-
+    this.limit_peer = 0;
     this.sendBlockUpdate(block);
   } else {
+    if(this.limit_peer < 5){
+      this.limit_peer++;
+      console.log('Limit peer : ', this.limit_peer);
+    }else {
+      this.limit_peer = 0;
+      await this.resetPeers();
+    }
     console.info("Not yet receive new block!");
   }
 };
@@ -200,6 +259,21 @@ Node.prototype.prepareStats = async function() {
     let peer = await request(peers);
     if(peer && peer.data.length > 0){
       this.stats.peers = peer.data.length;
+    }
+    this.peers = [];
+    if(peer.data.length > 0){
+      peer.data.map(e=>{
+        let p = {
+          host:e.ip,
+          port:4003,
+          ssl:false
+        };
+        this.peers.push(p);
+      });
+      console.info('Found '+peer.data.length+' from Know Network.');
+      console.info('List peers : ',this.peers);
+    } else {
+      console.info('Not found peer in Know NetWork....')
     }
     return {
       id: Math.random().toString(36).substring(7),
