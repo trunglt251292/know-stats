@@ -201,7 +201,14 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       }
     }
     block.uncles = result.forged.reward;
-
+    let infodelegate = await request({
+      uri:this.uri + api.delegate +'/'+result.generator.username,
+      json:true,
+      method:'GET'
+    });
+    block.forger.rate = infodelegate.data.rank;
+    block.forger.productivity = infodelegate.data.production.productivity;
+    block.forger.approval = infodelegate.data.production.approval;
     block.forger.username = result.generator.username;
     block.forger.address = result.generator.address;
     block.forger.publicKey = result.generator.publicKey;
@@ -263,7 +270,7 @@ Node.prototype.prepareStats = async function() {
     }
     let peer = await request(peers);
     if(peer && peer.data.length > 0){
-      this.stats.peers = peer.data.length;
+      this.stats.peers = peer.data.length + 1;
     }
     this.peers = [];
     if(peer.data.length > 0){
