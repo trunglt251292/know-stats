@@ -108,7 +108,7 @@ Node.prototype.emit = function (message, payload) {
 Node.prototype.resetPeers = async function () {
   try{
     console.info('Starting exchange peer ........')
-    if((this.location + 1) >= this.stats.peers ){
+    if((this.location + 1) >= this.peers.length ){
       this.location = 0;
     } else {
       let i = this.location + 1;
@@ -272,7 +272,6 @@ Node.prototype.prepareStats = async function() {
     if(peer && peer.data.length > 0){
       this.stats.peers = peer.data.length + 1;
     }
-    this.peers = [];
     if(peer.data.length > 0){
       peer.data.map(e=>{
         let p = {
