@@ -134,6 +134,11 @@ Node.prototype.updatePeers = async function () {
     let data = await request(options);
     let peers = data.data;
     if(peers.length > 0){
+      this.peers = [{
+        host:this.ip_node,
+        port:4003,
+        ssl:this.ssl
+      }];
       peers.map(e=>{
         let peer = {
           host:e.ip,
@@ -273,6 +278,11 @@ Node.prototype.prepareStats = async function() {
       this.stats.peers = peer.data.length + 1;
     }
     if(peer.data.length > 0){
+      this.peers = [{
+        host:this.ip_node,
+        port:4003,
+        ssl:this.ssl
+      }];
       peer.data.map(e=>{
         let p = {
           host:e.ip,
