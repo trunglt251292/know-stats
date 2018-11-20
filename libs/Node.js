@@ -24,6 +24,19 @@ const api = {
 function Node(io) {
   this.io = io;
   this.timeblock = [];
+  this.info = {
+    version: '',
+    username: '',
+    height:0,
+    lantency:0,
+    system: '',
+    uncles:'',
+    blockId: '',
+    voteBalance:0,
+    producedBlocks:0,
+    missBlocks: 0,
+    transactionBlock: 0
+  };
   this.status = false;
   this.location = 0;
   this.limit_peer = 0;
@@ -117,10 +130,19 @@ Node.prototype.resetPeers = async function () {
       this.location ++;
       let peers = this.peers;
       this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
+      let info = await request({
+        uri:this.uri+api.configuration,
+        json:true,
+        method:'GET'
+      });
       this.status = true;
       this.ip_node = peers[i].host;
       this.port = peers[i].port;
       this.ssl = peers[i].ssl;
+      this.info.username = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
+      this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
+      this.info.system = peers[i].os;
+      this.info.lantency = peers[i].lantency;
     }
   }catch (err){
     console.log("Reset peer error: ",err);
@@ -139,13 +161,19 @@ Node.prototype.updatePeers = async function () {
       this.peers = [{
         host:this.ip_node,
         port:4003,
-        ssl:this.ssl
+        ssl:this.ssl,
+        version:this.info.version,
+        os:this.info.os,
+        lantency:this.info.lantency
       }];
       peers.map(e=>{
         let peer = {
           host:e.ip,
           port:4003,
-          ssl:false
+          ssl:false,
+          version:e.version,
+          os:e.os,
+          lantency:e.lantency
         };
         this.peers.push(peer);
       });
@@ -205,7 +233,6 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
         approval: 0
       }
     };
-
     block.number = result.height;
     block.hash = result.id;
     block.difficulty = result.id;
@@ -369,7 +396,7 @@ Node.prototype.getInfoNode = async function () {
         height:e.height,
         lantency:e.latency,
         system: e.os,
-        uncles:block[0].forged.reward,
+        uncles:block.data[0].forged.reward,
         blockId: block.data[0].id,
         voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
         producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
@@ -377,7 +404,9 @@ Node.prototype.getInfoNode = async function () {
         transactionBlock: block.data[0].transactions
       }
     });
-    return Promise.all(promise);
+    node = await Promise.all(promise);
+    node.push(this.info);
+    return node;
   }else {
     return []
   }
