@@ -28,7 +28,7 @@ function Node(io) {
     version: '',
     username: '',
     height:0,
-    lantency:0,
+    latency:0,
     system: '',
     uncles:'',
     blockId: '',
@@ -73,7 +73,7 @@ function Node(io) {
     syncing: false,
     uptime: 100 // deprecated
   };
-  this.info = {};
+  this.versionInfo = {};
   this.checknode();
 }
 
@@ -142,7 +142,10 @@ Node.prototype.resetPeers = async function () {
       this.info.username = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
       this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
       this.info.system = peers[i].os;
-      this.info.lantency = peers[i].lantency;
+      this.info.latency = peers[i].latency;
+      this.info.missBlocks = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null;
+      this.info.producedBlocks = (info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null;
+      this.info.voteBalance = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null;
     }
   }catch (err){
     console.log("Reset peer error: ",err);
@@ -163,8 +166,8 @@ Node.prototype.updatePeers = async function () {
         port:4003,
         ssl:this.ssl,
         version:this.info.version,
-        os:this.info.os,
-        lantency:this.info.lantency
+        os:this.info.system,
+        latency:this.info.latency
       }];
       peers.map(e=>{
         let peer = {
@@ -173,7 +176,7 @@ Node.prototype.updatePeers = async function () {
           ssl:false,
           version:e.version,
           os:e.os,
-          lantency:e.lantency
+          latency:e.latency
         };
         this.peers.push(peer);
       });
@@ -235,7 +238,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
     };
     block.number = result.height;
     block.hash = result.id;
-    block.difficulty = result.id;
+    block.difficulty =  this.info.blockId = result.id;
     block.totalDifficulty = result.id;
     let tx = result.transactions;
     if(tx>0){
@@ -243,7 +246,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
         block.transactions.push(Math.random().toString(36).substring(7));
       }
     }
-    block.uncles = result.forged.reward;
+    block.uncles = this.info.uncles = result.forged.reward;
     let infodelegate = await request({
       uri:this.uri + api.delegate +'/'+result.generator.username,
       json:true,
@@ -321,13 +324,19 @@ Node.prototype.prepareStats = async function() {
       this.peers = [{
         host:this.ip_node,
         port:4003,
-        ssl:this.ssl
+        ssl:this.ssl,
+        version:this.info.version,
+        os:this.info.system,
+        latency:this.info.latency
       }];
       peer.data.map(e=>{
         let p = {
           host:e.ip,
           port:4003,
-          ssl:false
+          ssl:false,
+          version:e.version,
+          os:e.os,
+          latency:e.latency
         };
         this.peers.push(p);
       });
@@ -364,7 +373,7 @@ Node.prototype.prepareBlock = function (block) {
  * version: `Know 2.0.0 | Know-Stats v1.0.1`,
    username: 'example',
    height:24460,
-   lantency:190,
+   latency:190,
    system: 'linux',
    blockId: "12719422239306930493",
    voteBalance: "5344660000000",
@@ -394,7 +403,7 @@ Node.prototype.getInfoNode = async function () {
         version: `Know ${e.version} | Know-Stats v1.0.1`,
         username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
         height:e.height,
-        lantency:e.latency,
+        latency:e.latency,
         system: e.os,
         uncles:block.data[0].forged.reward,
         blockId: block.data[0].id,
@@ -406,6 +415,7 @@ Node.prototype.getInfoNode = async function () {
     });
     node = await Promise.all(promise);
     node.push(this.info);
+    console.log('Info Node: ',node);
     return node;
   }else {
     return []
@@ -427,7 +437,7 @@ Node.prototype.getVersion = async function () {
     };
     let data = await request(options);
     if(data) {
-      this.info = data.data;
+      this.versionInfo = data.data;
     }
   }
 };
