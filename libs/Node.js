@@ -17,11 +17,13 @@ const api = {
   configuration:'/api/v2/node/configuration',
   block:'/api/v2/blocks?limit=1',
   delegate:'/api/v2/delegates',
-  peers:'/api/v2/peers'
+  peers:'/api/v2/peers',
+  getblock:'/api/v2/blocks?height='
 };
 
 function Node(io) {
   this.io = io;
+  this.timeblock = [];
   this.status = false;
   this.location = 0;
   this.limit_peer = 0;
@@ -177,6 +179,15 @@ Node.prototype.updateBlockHeight = async function() {
 
 Node.prototype.validateLastBlock = async function (error, result, timeString) {
   if(result.height !== this.stats.block.number){
+    let timenow = Date.now();
+    let time = (this.timeSendBlock !== 0) ? (timenow - this.timeSendBlock) : 5000;
+    if(this.timeblock.length === 30){
+      this.timeblock.shift();
+      this.timeblock.push(time);
+    }else {
+      this.timeblock.push(time);
+    }
+    this.timeSendBlock = timenow;
     console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions+ ' /.To peers : '+this.ip_node);
     let block = {
       number: 0,
@@ -219,6 +230,8 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
     block.forger.publicKey = result.generator.publicKey;
     this.stats.block = block;
     this.limit_peer = 0;
+    block.node = await this.getInfoNode();
+    block.timeblock = this.timeblock;
     this.sendBlockUpdate(block);
   } else {
     if(this.limit_peer < 5){
@@ -320,6 +333,55 @@ Node.prototype.prepareBlock = function (block) {
 /**
  * Get Data
  * */
+/**
+ * version: `Know 2.0.0 | Know-Stats v1.0.1`,
+   username: 'example',
+   height:24460,
+   lantency:190,
+   system: 'linux',
+   blockId: "12719422239306930493",
+   voteBalance: "5344660000000",
+   producedBlocks: 3776,
+   missBlocks: 22
+ * */
+Node.prototype.getInfoNode = async function () {
+  let peers = {
+    method:'GET',
+    uri: this.uri + api.peers,
+    json:true
+  };
+  let node = await request(peers);
+  if(node.data.length > 0 ){
+    let promise = node.data.map(async e =>{
+      let block = await request({
+        uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.getblock+e.height,
+        method:'GET',
+        json:true
+      });
+      let info = await request({
+        uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.configuration,
+        method:'GET',
+        json:true
+      });
+      return {
+        version: `Know ${e.version} | Know-Stats v1.0.1`,
+        username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
+        height:e.height,
+        lantency:e.latency,
+        system: e.os,
+        blockId: block.data[0].id,
+        voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
+        producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
+        missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null,
+        transactionBlock: block.data[0].transactions
+      }
+    });
+    return Promise.all(promise);
+  }else {
+    return []
+  }
+};
+
 Node.prototype.getStats = function () {
   if(this.status){
     this.updateBlockHeight();

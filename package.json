@@ -5,8 +5,8 @@
   "main": "knowstats.net",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:production": "pm2 start ./bin/dev",
-    "start": "nodemon ./bin/dev"
+    "start:production": "pm2 start ./bin/know-reporter",
+    "start": "nodemon ./bin/know-reporter"
   },
   "author": "",
   "license": "ISC",

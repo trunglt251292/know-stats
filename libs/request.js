@@ -7,12 +7,13 @@ import Request from 'request-promise'
  * */
 export function request(options){
   return new Promise((resolve,reject)=>{
-    console.log('Request API : ',options.uri);
     Request(options, (err, data)=>{
       if(err){
         reject(err);
       }
-      resolve(data.body);
+      if(data) {
+        resolve(data.body);
+      }
     })
   })
 }
