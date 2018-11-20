@@ -369,6 +369,7 @@ Node.prototype.getInfoNode = async function () {
         height:e.height,
         lantency:e.latency,
         system: e.os,
+        uncles:block[0].forged.reward,
         blockId: block.data[0].id,
         voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
         producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
