@@ -69,7 +69,7 @@ function Node(io) {
         rate: '',
         productivity: 0,
         approval: 0
-      }
+      },
     },
     syncing: false,
     uptime: 100 // deprecated
@@ -300,6 +300,8 @@ Node.prototype.sendBlockUpdate = async function (block) {
 
 Node.prototype.whenConnect = async function () {
   this.emit('stats', await this.prepareStats());
+  this.stats.block.timeblock = this.timeblock;
+  this.stats.block.reportTransactions = this.transactions;
   this.emit('block', await this.prepareBlock(this.stats.block));
 };
 Node.prototype.sendStatsUpdate = async function() {
