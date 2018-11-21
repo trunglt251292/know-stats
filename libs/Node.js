@@ -289,7 +289,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       console.info("Not yet receive new block!");
     }
   }catch (err){
-    console.log('Error too many request!');
+    console.log('Error: ',err);
   }
 };
 /**
@@ -448,7 +448,7 @@ Node.prototype.getInfoNode = async function () {
       return []
     }
   }catch (err){
-    return Promise.reject('err get infoNode');
+    return Promise.reject(err);
   }
 };
 

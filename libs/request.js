@@ -44,7 +44,6 @@ export async function request(option, data) {
     return response.data
   } catch (err) {
     if (err.response) return err.response.data;
-
-    return { error: 'Network error' }
+    return Promise.reject('Net Work Error Connect');
   }
 }
