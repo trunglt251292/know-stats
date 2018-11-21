@@ -163,7 +163,7 @@ Node.prototype.updatePeers = async function () {
       method:'GET'
     };
     let data = await request(options);
-    let peers = data.data;
+    let peers = this.stats.peers = data.data;
     if(peers.length > 0){
       this.peers = [{
         host:config.peers[0].host,
