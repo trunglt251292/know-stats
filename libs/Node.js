@@ -129,28 +129,28 @@ Node.prototype.resetPeers = async function () {
       this.location = 0;
     } else {
       await this.updatePeers();
-      let i = this.location + 1;
       this.location ++;
-      let peers = this.peers;
-      console.log('Node select : ', peers[i].host);
-      this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
-      let info = await request({
-        uri:this.uri,
-        url:api.configuration,
-        method:'GET'
-      });
-      this.status = true;
-      this.ip_node = peers[i].host;
-      this.port = peers[i].port;
-      this.ssl = peers[i].ssl;
-      this.info.username = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
-      this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
-      this.info.system = peers[i].os;
-      this.info.latency = peers[i].latency;
-      this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0;
-      this.info.producedBlocks = (info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0;
-      this.info.voteBalance = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0;
     }
+    let i = this.location;
+    let peers = this.peers;
+    console.log('Node select : ', peers[i].host);
+    this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
+    let info = await request({
+      uri:this.uri,
+      url:api.configuration,
+      method:'GET'
+    });
+    this.status = true;
+    this.ip_node = peers[i].host;
+    this.port = peers[i].port;
+    this.ssl = peers[i].ssl;
+    this.info.username = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
+    this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
+    this.info.system = peers[i].os;
+    this.info.latency = peers[i].latency;
+    this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0;
+    this.info.producedBlocks = (info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0;
+    this.info.voteBalance = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0;
   }catch (err){
     console.log("Reset peer error: ",err);
   }
@@ -166,9 +166,9 @@ Node.prototype.updatePeers = async function () {
     let peers = data.data;
     if(peers.length > 0){
       this.peers = [{
-        host:this.ip_node,
-        port:4003,
-        ssl:this.ssl,
+        host:config.peers[0].host,
+        port:config.peers[0].port,
+        ssl:config.peers[0].ssl,
         version:this.info.version,
         os:this.info.system,
         latency:this.info.latency
@@ -185,6 +185,7 @@ Node.prototype.updatePeers = async function () {
         this.peers.push(peer);
       });
       console.info('Found '+peers.length+' from Know Network.');
+      console.info('List Peers : ', this.peers);
     } else {
       console.info('Not found peer in Know NetWork....')
     }
@@ -329,46 +330,11 @@ Node.prototype.prepareStats = async function() {
       url:api.delegate,
       json:true
     };
-    let peers = {
-      method:'GET',
-      uri: this.uri,
-      url:api.peers,
-      json:true
-    };
     let delegate = await request(countDelegate);
     if(delegate && delegate.meta){
       this.stats.delegateCount = delegate.meta.count
     } else {
       this.stats.delegateCount = 0
-    }
-    let peer = await request(peers);
-    if(peer && peer.data.length > 0){
-      this.stats.peers = peer.data.length + 1;
-    }
-    if(peer.data.length > 0){
-      this.peers = [{
-        host:this.ip_node,
-        port:4003,
-        ssl:this.ssl,
-        version:this.info.version,
-        os:this.info.system,
-        latency:this.info.latency
-      }];
-      peer.data.map(e=>{
-        let p = {
-          host:e.ip,
-          port:4003,
-          ssl:false,
-          version:e.version,
-          os:e.os,
-          latency:e.latency
-        };
-        this.peers.push(p);
-      });
-      console.info('Found '+peer.data.length+' from Know Network.');
-      console.info('List peers : ',this.peers);
-    } else {
-      console.info('Not found peer in Know NetWork....')
     }
     return {
       id: Math.random().toString(36).substring(7),
@@ -428,8 +394,6 @@ Node.prototype.getInfoNode = async function () {
           method:'GET',
           json:true
         });
-        console.log('Block : ======================= ', block);
-        console.log('Info : ========================= ', block);
         return {
           version: `Know ${e.version} | Know-Stats v1.0.1`,
           username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
