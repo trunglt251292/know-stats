@@ -204,7 +204,6 @@ Node.prototype.updateBlockHeight = async function() {
       await this.validateLastBlock(null, block, '');
     } else {
       await this.resetPeers();
-      await this.updateBlockHeight();
     }
   }catch (err){
     console.error(err);
@@ -442,9 +441,9 @@ Node.prototype.getInfoNode = async function () {
   }
 };
 
-Node.prototype.getStats = function () {
+Node.prototype.getStats = async function () {
   if(this.status){
-    this.updateBlockHeight();
+    await this.updateBlockHeight();
   }
 };
 
@@ -469,7 +468,7 @@ Node.prototype.getVersion = async function () {
 Node.prototype.setWatches = function () {
   this.blockInterval = setInterval(()=>{
     this.getStats();
-  }, 500);
+  }, 1000);
   this.statsInterval = setInterval(()=>{
     this.sendStatsUpdate();
   }, globalConstants.STATS_INTERVAL)
