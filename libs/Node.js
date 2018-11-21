@@ -128,9 +128,11 @@ Node.prototype.resetPeers = async function () {
     if((this.location + 1) >= this.peers.length ){
       this.location = 0;
     } else {
+      await this.updatePeers();
       let i = this.location + 1;
       this.location ++;
       let peers = this.peers;
+      console.log('Node select : ', peers[i].host);
       this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
       let info = await request({
         uri:this.uri,
@@ -141,13 +143,13 @@ Node.prototype.resetPeers = async function () {
       this.ip_node = peers[i].host;
       this.port = peers[i].port;
       this.ssl = peers[i].ssl;
-      this.info.username = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
+      this.info.username = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
       this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
       this.info.system = peers[i].os;
       this.info.latency = peers[i].latency;
-      this.info.missBlocks = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null;
-      this.info.producedBlocks = (info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null;
-      this.info.voteBalance = (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null;
+      this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0;
+      this.info.producedBlocks = (info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0;
+      this.info.voteBalance = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0;
     }
   }catch (err){
     console.log("Reset peer error: ",err);
@@ -426,6 +428,8 @@ Node.prototype.getInfoNode = async function () {
           method:'GET',
           json:true
         });
+        console.log('Block : ======================= ', block);
+        console.log('Info : ========================= ', block);
         return {
           version: `Know ${e.version} | Know-Stats v1.0.1`,
           username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
