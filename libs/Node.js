@@ -158,7 +158,7 @@ Node.prototype.resetPeers = async function () {
 Node.prototype.updatePeers = async function () {
   try{
     let options = {
-      uri:this.uri,
+      uri:(config.peers[0].ssl ? 'https://':'http://')+''+config.peers[0].host+':'+config.peers[0].port,
       url:api.peers,
       method:'GET'
     };
@@ -255,7 +255,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       block.hash = result.id;
       block.difficulty =  this.info.blockId = result.id;
       block.totalDifficulty = result.id;
-      let tx = result.transactions;
+      let tx = this.info.transactions = result.transactions;
       if(tx>0){
         for(let i = 0; i<tx; i++){
           block.transactions.push(Math.random().toString(36).substring(7));
