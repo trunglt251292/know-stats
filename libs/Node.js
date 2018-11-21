@@ -24,6 +24,7 @@ const api = {
 function Node(io) {
   this.io = io;
   this.timeblock = [];
+  this.transactions = [];
   this.info = {
     version: '',
     username: '',
@@ -50,7 +51,7 @@ function Node(io) {
   this.stats = {
     active: false,
     forging: false,
-    peers: 0,
+    peers: 5,
     badPeers: 0,
     pending: 0, // deprecated
     delegateCount: 0,
@@ -219,6 +220,13 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       this.timeblock.push(time);
     }
     this.timeSendBlock = timenow;
+    // Set array transactions
+    if(this.transactions.length === 30){
+      this.transactions.shift();
+      this.transactions.push(result.transactions)
+    }else {
+      this.transactions.push(result.transactions);
+    }
     console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions+ ' /.To peers : '+this.ip_node);
     let block = {
       number: 0,
@@ -236,7 +244,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
         approval: 0
       }
     };
-    block.number = result.height;
+    block.number = this.info.height = result.height;
     block.hash = result.id;
     block.difficulty =  this.info.blockId = result.id;
     block.totalDifficulty = result.id;
@@ -262,6 +270,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
     this.limit_peer = 0;
     block.node = await this.getInfoNode();
     block.timeblock = this.timeblock;
+    block.reportTransactions = this.transactions;
     this.sendBlockUpdate(block);
   } else {
     if(this.limit_peer < 5){
@@ -449,7 +458,7 @@ Node.prototype.getVersion = async function () {
 Node.prototype.setWatches = function () {
   this.blockInterval = setInterval(()=>{
     this.getStats();
-  }, 2000);
+  }, 1000);
   this.statsInterval = setInterval(()=>{
     this.sendStatsUpdate();
   }, globalConstants.STATS_INTERVAL)
