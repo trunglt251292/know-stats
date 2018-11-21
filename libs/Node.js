@@ -198,10 +198,13 @@ Node.prototype.updateBlockHeight = async function() {
       json:true
     };
     let data = await request(options);
-    if(data && data.data.length > 0){
+    if(data.data && data.data.length > 0){
       let block = data.data[0];
       this.blockHeight = block.height;
       await this.validateLastBlock(null, block, '');
+    } else {
+      await this.resetPeers();
+      await this.updateBlockHeight();
     }
   }catch (err){
     console.error(err);
