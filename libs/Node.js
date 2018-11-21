@@ -2,6 +2,7 @@ import {request} from "./request";
 import config from '../config';
 const _ = require('lodash');
 import globalConstants from '../globalConstants';
+import {callAPI} from "./request";
 
 /**
  * Thread
@@ -88,9 +89,9 @@ Node.prototype.checknode = async function () {
     } else {
       for(let i = 0; i<nodes.length; i++){
         let options = {
-          uri: (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port+''+api.status,
-          method:'GET',
-          json:true
+          uri: (nodes[i].ssl ? 'https://':'http://')+''+nodes[i].host+':'+nodes[i].port,
+          url: api.status,
+          method:'GET'
         };
         let success = await request(options);
         if(success){
@@ -132,8 +133,8 @@ Node.prototype.resetPeers = async function () {
       let peers = this.peers;
       this.uri = (peers[i].ssl ? 'https://':'http://')+''+peers[i].host+':'+peers[i].port;
       let info = await request({
-        uri:this.uri+api.configuration,
-        json:true,
+        uri:this.uri,
+        url:api.configuration,
         method:'GET'
       });
       this.status = true;
@@ -155,9 +156,9 @@ Node.prototype.resetPeers = async function () {
 Node.prototype.updatePeers = async function () {
   try{
     let options = {
-      uri:this.uri+api.peers,
-      method:'GET',
-      json:true
+      uri:this.uri,
+      url:api.peers,
+      method:'GET'
     };
     let data = await request(options);
     let peers = data.data;
@@ -194,7 +195,8 @@ Node.prototype.updateBlockHeight = async function() {
   try{
     let options = {
       method:'GET',
-      uri: this.uri+api.block,
+      uri: this.uri,
+      url:api.block,
       json:true
     };
     let data = await request(options);
@@ -259,7 +261,8 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       }
       block.uncles = this.info.uncles = result.forged.reward;
       let infodelegate = await request({
-        uri:this.uri + api.delegate +'/'+result.generator.username,
+        uri:this.uri,
+        url:api.delegate +'/'+result.generator.username,
         json:true,
         method:'GET'
       });
@@ -302,6 +305,7 @@ Node.prototype.whenConnect = async function () {
   this.emit('stats', await this.prepareStats());
   this.stats.block.timeblock = this.timeblock;
   this.stats.block.reportTransactions = this.transactions;
+  this.stats.block.time = Date.now() - this.timeSendBlock;
   this.emit('block', await this.prepareBlock(this.stats.block));
 };
 Node.prototype.sendStatsUpdate = async function() {
@@ -319,12 +323,14 @@ Node.prototype.prepareStats = async function() {
   if(this.status){
     let countDelegate = {
       method:'GET',
-      uri: this.uri + api.delegate,
+      uri: this.uri,
+      url:api.delegate,
       json:true
     };
     let peers = {
       method:'GET',
-      uri: this.uri + api.peers,
+      uri: this.uri,
+      url:api.peers,
       json:true
     };
     let delegate = await request(countDelegate);
@@ -401,19 +407,22 @@ Node.prototype.getInfoNode = async function () {
   try{
     let peers = {
       method:'GET',
-      uri: this.uri + api.peers,
+      uri: this.uri,
+      url:api.peers,
       json:true
     };
     let node = await request(peers);
     if(node.data.length > 0 ){
       let promise = node.data.map(async e =>{
         let block = await request({
-          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.getblock+e.height,
+          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003',
+          url:api.getblock+e.height,
           method:'GET',
           json:true
         });
         let info = await request({
-          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.configuration,
+          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003',
+          url:api.configuration,
           method:'GET',
           json:true
         });
@@ -452,7 +461,8 @@ Node.prototype.getStats = async function () {
 Node.prototype.getVersion = async function () {
   if(this.status){
     let options = {
-      uri:this.uri + api.configuration,
+      uri:this.uri,
+      url:api.configuration,
       method:'GET',
       json:true
     };
