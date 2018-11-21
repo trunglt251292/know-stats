@@ -210,7 +210,7 @@ Node.prototype.updateBlockHeight = async function() {
 };
 
 Node.prototype.validateLastBlock = async function (error, result, timeString) {
-  if(result.height !== this.stats.block.number){
+  if(result.height > this.stats.block.number){
     let timenow = Date.now();
     let time = (this.timeSendBlock !== 0) ? (timenow - this.timeSendBlock) : 5000;
     if(this.timeblock.length === 30){
