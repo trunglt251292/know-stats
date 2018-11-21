@@ -213,77 +213,81 @@ Node.prototype.updateBlockHeight = async function() {
 };
 
 Node.prototype.validateLastBlock = async function (error, result, timeString) {
-  if(result.height > this.stats.block.number){
-    let timenow = Date.now();
-    let time = (this.timeSendBlock !== 0) ? (timenow - this.timeSendBlock) : 5000;
-    if(this.timeblock.length === 30){
-      this.timeblock.shift();
-      this.timeblock.push(time);
-    }else {
-      this.timeblock.push(time);
-    }
-    this.timeSendBlock = timenow;
-    // Set array transactions
-    if(this.transactions.length === 30){
-      this.transactions.shift();
-      this.transactions.push(result.transactions)
-    }else {
-      this.transactions.push(result.transactions);
-    }
-    console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions+ ' /.To peers : '+this.ip_node);
-    let block = {
-      number: 0,
-      hash: '',
-      difficulty: 0,
-      totalDifficulty: 0,
-      transactions: [],
-      uncles: [],
-      forger: {
-        username: '',
-        address: '',
-        publicKey:'',
-        rate: '',
-        productivity: 0,
-        approval: 0
+  try{
+    if(result.height > this.stats.block.number){
+      let timenow = Date.now();
+      let time = (this.timeSendBlock !== 0) ? (timenow - this.timeSendBlock) : 5000;
+      if(this.timeblock.length === 30){
+        this.timeblock.shift();
+        this.timeblock.push(time);
+      }else {
+        this.timeblock.push(time);
       }
-    };
-    block.number = this.info.height = result.height;
-    block.hash = result.id;
-    block.difficulty =  this.info.blockId = result.id;
-    block.totalDifficulty = result.id;
-    let tx = result.transactions;
-    if(tx>0){
-      for(let i = 0; i<tx; i++){
-        block.transactions.push(Math.random().toString(36).substring(7));
+      this.timeSendBlock = timenow;
+      // Set array transactions
+      if(this.transactions.length === 30){
+        this.transactions.shift();
+        this.transactions.push(result.transactions)
+      }else {
+        this.transactions.push(result.transactions);
       }
-    }
-    block.uncles = this.info.uncles = result.forged.reward;
-    let infodelegate = await request({
-      uri:this.uri + api.delegate +'/'+result.generator.username,
-      json:true,
-      method:'GET'
-    });
-    block.forger.rate = infodelegate.data.rank;
-    block.forger.productivity = infodelegate.data.production.productivity;
-    block.forger.approval = infodelegate.data.production.approval;
-    block.forger.username = result.generator.username;
-    block.forger.address = result.generator.address;
-    block.forger.publicKey = result.generator.publicKey;
-    this.stats.block = block;
-    this.limit_peer = 0;
-    block.node = await this.getInfoNode();
-    block.timeblock = this.timeblock;
-    block.reportTransactions = this.transactions;
-    this.sendBlockUpdate(block);
-  } else {
-    if(this.limit_peer < 5){
-      this.limit_peer++;
-      console.log('Limit peer : ', this.limit_peer);
-    }else {
+      console.info('Receive new block to know node : '+result.height+' . Quantity transactions : '+result.transactions+ ' /.To peers : '+this.ip_node);
+      let block = {
+        number: 0,
+        hash: '',
+        difficulty: 0,
+        totalDifficulty: 0,
+        transactions: [],
+        uncles: [],
+        forger: {
+          username: '',
+          address: '',
+          publicKey:'',
+          rate: '',
+          productivity: 0,
+          approval: 0
+        }
+      };
+      block.number = this.info.height = result.height;
+      block.hash = result.id;
+      block.difficulty =  this.info.blockId = result.id;
+      block.totalDifficulty = result.id;
+      let tx = result.transactions;
+      if(tx>0){
+        for(let i = 0; i<tx; i++){
+          block.transactions.push(Math.random().toString(36).substring(7));
+        }
+      }
+      block.uncles = this.info.uncles = result.forged.reward;
+      let infodelegate = await request({
+        uri:this.uri + api.delegate +'/'+result.generator.username,
+        json:true,
+        method:'GET'
+      });
+      block.forger.rate = infodelegate.data.rank;
+      block.forger.productivity = infodelegate.data.production.productivity;
+      block.forger.approval = infodelegate.data.production.approval;
+      block.forger.username = result.generator.username;
+      block.forger.address = result.generator.address;
+      block.forger.publicKey = result.generator.publicKey;
+      this.stats.block = block;
       this.limit_peer = 0;
-      await this.resetPeers();
+      block.node = await this.getInfoNode();
+      block.timeblock = this.timeblock;
+      block.reportTransactions = this.transactions;
+      this.sendBlockUpdate(block);
+    } else {
+      if(this.limit_peer < 5){
+        this.limit_peer++;
+        console.log('Limit peer : ', this.limit_peer);
+      }else {
+        this.limit_peer = 0;
+        await this.resetPeers();
+      }
+      console.info("Not yet receive new block!");
     }
-    console.info("Not yet receive new block!");
+  }catch (err){
+    console.log('Error too many request!');
   }
 };
 /**
@@ -393,44 +397,48 @@ Node.prototype.prepareBlock = function (block) {
    missBlocks: 22
  * */
 Node.prototype.getInfoNode = async function () {
-  let peers = {
-    method:'GET',
-    uri: this.uri + api.peers,
-    json:true
-  };
-  let node = await request(peers);
-  if(node.data.length > 0 ){
-    let promise = node.data.map(async e =>{
-      let block = await request({
-        uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.getblock+e.height,
-        method:'GET',
-        json:true
+  try{
+    let peers = {
+      method:'GET',
+      uri: this.uri + api.peers,
+      json:true
+    };
+    let node = await request(peers);
+    if(node.data.length > 0 ){
+      let promise = node.data.map(async e =>{
+        let block = await request({
+          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.getblock+e.height,
+          method:'GET',
+          json:true
+        });
+        let info = await request({
+          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.configuration,
+          method:'GET',
+          json:true
+        });
+        return {
+          version: `Know ${e.version} | Know-Stats v1.0.1`,
+          username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
+          height:e.height,
+          latency:e.latency,
+          system: e.os,
+          uncles:block.data[0].forged.reward,
+          blockId: block.data[0].id,
+          voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
+          producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
+          missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null,
+          transactionBlock: block.data[0].transactions
+        }
       });
-      let info = await request({
-        uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003'+api.configuration,
-        method:'GET',
-        json:true
-      });
-      return {
-        version: `Know ${e.version} | Know-Stats v1.0.1`,
-        username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
-        height:e.height,
-        latency:e.latency,
-        system: e.os,
-        uncles:block.data[0].forged.reward,
-        blockId: block.data[0].id,
-        voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
-        producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
-        missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null,
-        transactionBlock: block.data[0].transactions
-      }
-    });
-    node = await Promise.all(promise);
-    node.push(this.info);
-    console.log('Info Node: ',node);
-    return node;
-  }else {
-    return []
+      node = await Promise.all(promise);
+      node.push(this.info);
+      console.log('Info Node: ',node);
+      return node;
+    }else {
+      return []
+    }
+  }catch (err){
+    return Promise.reject('err get infoNode');
   }
 };
 
@@ -461,7 +469,7 @@ Node.prototype.getVersion = async function () {
 Node.prototype.setWatches = function () {
   this.blockInterval = setInterval(()=>{
     this.getStats();
-  }, 1000);
+  }, 500);
   this.statsInterval = setInterval(()=>{
     this.sendStatsUpdate();
   }, globalConstants.STATS_INTERVAL)
