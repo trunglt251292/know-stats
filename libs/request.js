@@ -5,15 +5,19 @@ import Request from 'request-promise'
  * uri  - require
  * method - require
  * */
-export function request(options){
-  return new Promise((resolve,reject)=>{
-    Request(options, (err, data)=>{
-      if(err){
-        reject(err);
-      }
-      if(data) {
-        resolve(data.body);
-      }
+export async function request(options){
+  try{
+    return new Promise((resolve,reject)=>{
+      Request(options, (err, data)=>{
+        if(err){
+          reject(err);
+        }
+        if(data) {
+          resolve(data.body);
+        }
+      })
     })
-  })
+  }catch (err){
+    throw err;
+  }
 }
