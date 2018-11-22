@@ -165,7 +165,7 @@ Node.prototype.updatePeers = async function () {
     };
     let data = await request(options);
     let peers = data.data;
-    this.stats.peers = peers ? peers.length : this.stats.peers;
+    this.stats.peers = peers ? peers.length + 1 : this.stats.peers;
     if(peers.length > 0){
       this.peers = [{
         host:this.ip_node,
@@ -387,7 +387,6 @@ Node.prototype.getInfoNode = async function () {
     await this.updatePeers();
     if(this.peers.length > 0 ){
       let promise = this.peers.map(async e =>{
-        console.log(e);
         let block = await request({
           uri: (e.ssl ? 'https://':'http://')+''+e.host+':4003',
           url:api.getblock+e.height,
