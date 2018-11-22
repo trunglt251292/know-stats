@@ -107,7 +107,7 @@ Node.prototype.checknode = async function () {
     }
   }catch (err){
     console.error(err);
-    throw err;
+      throw err;
   }
 };
 
@@ -190,10 +190,13 @@ Node.prototype.updatePeers = async function () {
       });
       console.info('Found '+peers.length+' from Know Network.');
     } else {
-      await this.resetPeers();
+      if(this.peers.length > 1){
+        await this.resetPeers();
+      }
       console.info('Not found peer in Know NetWork....')
     }
   }catch (err){
+    this.uri = (config.peers[0].ssl ? 'https://':'http://')+''+config.peers[0].host+':'+config.peers[0].port;
     console.log("Update peers fail.");
     console.error(err);
   }
@@ -216,7 +219,6 @@ Node.prototype.updateBlockHeight = async function() {
     }
   }catch (err){
     console.error(err);
-    throw err;
   }
 };
 
