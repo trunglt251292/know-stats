@@ -165,7 +165,7 @@ Node.prototype.updatePeers = async function () {
     };
     let data = await request(options);
     let peers = data.data;
-    this.stats.peers = peers.length;
+    this.stats.peers = peers ? peers.length : this.stats.peers;
     if(peers.length > 0){
       this.peers = [{
         host:this.ip_node,
@@ -190,6 +190,7 @@ Node.prototype.updatePeers = async function () {
       });
       console.info('Found '+peers.length+' from Know Network.');
     } else {
+      await this.resetPeers();
       console.info('Not found peer in Know NetWork....')
     }
   }catch (err){
