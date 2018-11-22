@@ -400,15 +400,15 @@ Node.prototype.getInfoNode = async function () {
         });
         return {
           version: `Know ${e.version} | Know-Stats v1.0.1`,
-          username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null,
+          username: (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:"Unknown",
           height:e.height,
           latency:e.latency,
           system: e.os,
           uncles:block.data[0].forged.reward,
           blockId: block.data[0].id,
-          voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:null,
-          producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:null,
-          missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:null,
+          voteBalance:(info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0,
+          producedBlocks:(info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0,
+          missBlocks: (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0,
           transactionBlock: block.data[0].transactions
         }
       });
