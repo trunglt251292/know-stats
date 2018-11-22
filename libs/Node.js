@@ -125,7 +125,7 @@ Node.prototype.emit = function (message, payload) {
 Node.prototype.resetPeers = async function () {
   try{
     console.info('Starting exchange peer ........')
-    await this.updatePeers();
+    //await this.updatePeers();
     if((this.location + 1) >= this.peers.length ){
       this.location = (this.ip_node === this.peers[0].host) ? 1 : 0;
     } else {
@@ -143,9 +143,10 @@ Node.prototype.resetPeers = async function () {
     this.status = true;
     this.ip_node = peers[i].host;
     this.port = peers[i].port;
+    this.info.height = peers[i].height;
     this.ssl = peers[i].ssl;
     this.info.username = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
-    this.info.version = `Know ${peers[i].version} | Know-Stats v1.0.1`;
+    this.info.version = peers[i].version;
     this.info.system = peers[i].os;
     this.info.latency = peers[i].latency;
     this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0;
@@ -170,6 +171,7 @@ Node.prototype.updatePeers = async function () {
         host:this.ip_node,
         port:this.port,
         ssl:this.ssl,
+        height:this.info.height,
         version:this.info.version,
         os:this.info.system,
         latency:this.info.latency
@@ -179,6 +181,7 @@ Node.prototype.updatePeers = async function () {
           host:e.ip,
           port:4003,
           ssl:false,
+          height:e.height,
           version:e.version,
           os:e.os,
           latency:e.latency
@@ -186,7 +189,6 @@ Node.prototype.updatePeers = async function () {
         this.peers.push(peer);
       });
       console.info('Found '+peers.length+' from Know Network.');
-      console.info('List Peers : ', this.peers);
     } else {
       console.info('Not found peer in Know NetWork....')
     }
@@ -278,7 +280,7 @@ Node.prototype.validateLastBlock = async function (error, result, timeString) {
       block.forger.publicKey = result.generator.publicKey;
       this.stats.block = block;
       this.limit_peer = 0;
-      block.node = await this.getInfoNode();
+      //block.node = await this.getInfoNode();
       block.timeblock = this.timeblock;
       block.reportTransactions = this.transactions;
       this.sendBlockUpdate(block);
@@ -318,7 +320,12 @@ Node.prototype.sendStatsUpdate = async function() {
     this.emit('stats', await this.prepareStats());
   }
 }
-
+Node.prototype.sendNodeStatus = async function () {
+  if(this.status){
+    console.log('Sending node information to KnowStats ..');
+    this.emit('node', await this.prepareNode());
+  }
+}
 
 /**
  * Prepare payload
@@ -351,7 +358,9 @@ Node.prototype.prepareStats = async function() {
     };
   }
 };
-
+Node.prototype.prepareNode = async function () {
+  return await this.getInfoNode();
+};
 Node.prototype.prepareBlock = function (block) {
   return {
     id:Math.random().toString(36).substring(7),
@@ -374,30 +383,17 @@ Node.prototype.prepareBlock = function (block) {
  * */
 Node.prototype.getInfoNode = async function () {
   try{
-    let peers = {
-      method:'GET',
-      uri: this.uri,
-      url:api.peers,
-      json:true
-    };
-    let node = await request(peers);
-    if(node.data.length > 0 ){
-      node.data.push({
-        ip:this.ip_node,
-        ssl:this.ssl,
-        version:this.info.version,
-        os:this.info.system,
-        latency:this.info.latency
-      });
-      let promise = node.data.map(async e =>{
+    await this.updatePeers();
+    if(this.peers.length > 0 ){
+      let promise = this.peers.map(async e =>{
         let block = await request({
-          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003',
+          uri: (e.ssl ? 'https://':'http://')+''+e.host+':4003',
           url:api.getblock+e.height,
           method:'GET',
           json:true
         });
         let info = await request({
-          uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003',
+          uri: (e.ssl ? 'https://':'http://')+''+e.host+':4003',
           url:api.configuration,
           method:'GET',
           json:true
@@ -416,9 +412,7 @@ Node.prototype.getInfoNode = async function () {
           transactionBlock: block.data[0].transactions
         }
       });
-      node = await Promise.all(promise);
-      console.log('Info Node: ',node);
-      return node;
+      return await Promise.all(promise);
     }else {
       return []
     }
@@ -457,8 +451,9 @@ Node.prototype.setWatches = function () {
     this.getStats();
   }, 1000);
   this.statsInterval = setInterval(()=>{
+    this.sendNodeStatus();
     this.sendStatsUpdate();
-  }, 2000)
+  }, 5000)
 };
 Node.prototype.init = async function() {
   await this.getVersion();

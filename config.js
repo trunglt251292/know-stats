@@ -3,9 +3,10 @@ module.exports = {
   ws_port:'8080',
   peers:[
     {
-      host:'35.236.43.14',
+      host:'35.203.64.208',
       port:4003,
-      ssl:false
+      ssl:false,
+      os:'linux'
     }
   ]
 };
