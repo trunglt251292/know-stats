@@ -27,12 +27,12 @@ function Node(io) {
   this.timeblock = [];
   this.transactions = [];
   this.info = {
-    version: '',
+    version: '2.0.0',
     username: '',
     height:0,
-    latency:0,
-    system: '',
-    uncles:'',
+    latency:100,
+    system: config.peers[0].os,
+    uncles:0,
     blockId: '',
     voteBalance:0,
     producedBlocks:0,
@@ -114,7 +114,7 @@ Node.prototype.checknode = async function () {
 Node.prototype.emit = function (message, payload) {
   if(this.io){
     try {
-      console.log('Data : ', payload);
+      console.log('Data emit : ', payload);
       this.io.sockets.emit(message, payload);
     } catch (err) {
       console.error("Socket emit error:", err);
@@ -125,10 +125,10 @@ Node.prototype.emit = function (message, payload) {
 Node.prototype.resetPeers = async function () {
   try{
     console.info('Starting exchange peer ........')
+    await this.updatePeers();
     if((this.location + 1) >= this.peers.length ){
-      this.location = 0;
+      this.location = (this.ip_node === this.peers[0].host) ? 1 : 0;
     } else {
-      await this.updatePeers();
       this.location ++;
     }
     let i = this.location;
@@ -158,17 +158,18 @@ Node.prototype.resetPeers = async function () {
 Node.prototype.updatePeers = async function () {
   try{
     let options = {
-      uri:(config.peers[0].ssl ? 'https://':'http://')+''+config.peers[0].host+':'+config.peers[0].port,
+      uri:this.uri,
       url:api.peers,
       method:'GET'
     };
     let data = await request(options);
-    let peers = this.stats.peers = data.data;
+    let peers = data.data;
+    this.stats.peers = peers.length;
     if(peers.length > 0){
       this.peers = [{
-        host:config.peers[0].host,
-        port:config.peers[0].port,
-        ssl:config.peers[0].ssl,
+        host:this.ip_node,
+        port:this.port,
+        ssl:this.ssl,
         version:this.info.version,
         os:this.info.system,
         latency:this.info.latency
@@ -381,6 +382,13 @@ Node.prototype.getInfoNode = async function () {
     };
     let node = await request(peers);
     if(node.data.length > 0 ){
+      node.data.push({
+        ip:this.ip_node,
+        ssl:this.ssl,
+        version:this.info.version,
+        os:this.info.system,
+        latency:this.info.latency
+      });
       let promise = node.data.map(async e =>{
         let block = await request({
           uri: (e.ssl ? 'https://':'http://')+''+e.ip+':4003',
@@ -409,7 +417,6 @@ Node.prototype.getInfoNode = async function () {
         }
       });
       node = await Promise.all(promise);
-      node.push(this.info);
       console.log('Info Node: ',node);
       return node;
     }else {
@@ -451,7 +458,7 @@ Node.prototype.setWatches = function () {
   }, 1000);
   this.statsInterval = setInterval(()=>{
     this.sendStatsUpdate();
-  }, globalConstants.STATS_INTERVAL)
+  }, 2000)
 };
 Node.prototype.init = async function() {
   await this.getVersion();
