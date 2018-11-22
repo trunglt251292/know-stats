@@ -386,6 +386,7 @@ Node.prototype.getInfoNode = async function () {
     await this.updatePeers();
     if(this.peers.length > 0 ){
       let promise = this.peers.map(async e =>{
+        console.log(e);
         let block = await request({
           uri: (e.ssl ? 'https://':'http://')+''+e.host+':4003',
           url:api.getblock+e.height,
@@ -398,21 +399,29 @@ Node.prototype.getInfoNode = async function () {
           method:'GET',
           json:true
         });
-        return {
-          version: `Know ${e.version} | Know-Stats v1.0.1`,
-          username: (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:"Unknown",
-          height:e.height,
-          latency:e.latency,
-          system: e.os,
-          uncles:block.data[0].forged.reward,
-          blockId: block.data[0].id,
-          voteBalance:(info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0,
-          producedBlocks:(info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0,
-          missBlocks: (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0,
-          transactionBlock: block.data[0].transactions
+        if(block.data && info.data){
+          return {
+            version: `Know ${e.version} | Know-Stats v1.0.1`,
+            username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:"Unknown",
+            height:e.height,
+            latency:e.latency,
+            system: e.os,
+            uncles:block.data[0].forged.reward,
+            blockId: block.data[0].id,
+            voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0,
+            producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0,
+            missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0,
+            transactionBlock: block.data[0].transactions
+          }
         }
       });
-      return await Promise.all(promise);
+      let node =  await Promise.all(promise);
+      node = node.filter(e=>{
+        if(e){
+          return e;
+        }
+      });
+      return node;
     }else {
       return []
     }
