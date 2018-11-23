@@ -107,7 +107,7 @@ Node.prototype.checknode = async function () {
     }
   }catch (err){
     console.error(err);
-      throw err;
+    throw err;
   }
 };
 
@@ -145,13 +145,13 @@ Node.prototype.resetPeers = async function () {
     this.port = peers[i].port;
     this.info.height = peers[i].height;
     this.ssl = peers[i].ssl;
-    this.info.username = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:null;
+    this.info.username = (info.data && info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].username:null;
     this.info.version = peers[i].version;
     this.info.system = peers[i].os;
     this.info.latency = peers[i].latency;
-    this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0;
-    this.info.producedBlocks = (info.data && info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0;
-    this.info.voteBalance = (info.data && info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0;
+    this.info.missBlocks = (info.data && info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].missedBlocks:0;
+    this.info.producedBlocks = (info.data && info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].producedBlocks:0;
+    this.info.voteBalance = (info.data && info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].voteBalance:0;
   }catch (err){
     console.log("Reset peer error: ",err);
   }
@@ -404,15 +404,15 @@ Node.prototype.getInfoNode = async function () {
         if(block.data && info.data){
           return {
             version: `Know ${e.version} | Know-Stats v1.0.1`,
-            username: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].username:"Unknown",
+            username: (info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].username:"Unknown",
             height:e.height,
             latency:e.latency,
             system: e.os,
             uncles:block.data[0].forged.reward,
             blockId: block.data[0].id,
-            voteBalance:(info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].voteBalance:0,
-            producedBlocks:(info.data.delegates && info.data.delegates.length) > 0 ? info.data.delegates[0].producedBlocks:0,
-            missBlocks: (info.data.delegates && info.data.delegates.length > 0) ? info.data.delegates[0].missedBlocks:0,
+            voteBalance:(info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].voteBalance:0,
+            producedBlocks:(info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].producedBlocks:0,
+            missBlocks: (info.data.delegates && info.data.delegates[0]) ? info.data.delegates[0].missedBlocks:0,
             transactionBlock: block.data[0].transactions
           }
         }
